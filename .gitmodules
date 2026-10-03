@@ -1,0 +1,6 @@
+[submodule "doom-pane"]
+	path = doom-pane
+	url = https://github.com/tylergraydev/doom-pane.git
+[submodule "rail-runner"]
+	path = rail-runner
+	url = https://github.com/tylergraydev/rail-runner.git

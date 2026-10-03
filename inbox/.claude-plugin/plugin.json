@@ -1,0 +1,15 @@
+{
+  "name": "inbox",
+  "version": "0.2.0",
+  "description": "A task inbox kept as markdown files in .inbox/: create tasks, deploy subagents on them one by one or as a drain, watch their progress, a watchdog for idle workers and cross-session locks",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "idleMinutes": { "type": "number", "title": "Idle minutes", "description": "A worker with no new activity for this long turns yellow and toasts once.", "default": 10 },
+    "timeoutMinutes": { "type": "number", "title": "Timeout minutes", "description": "A worker idle this long is marked timed out (red, toast once), then the on-timeout action runs.", "default": 30 },
+    "maxRunMinutes": { "type": "number", "title": "Max run minutes", "description": "Optional wall-clock cap, treated like a timeout. 0 turns it off.", "default": 0 },
+    "onTimeout": { "type": "string", "title": "On timeout", "description": "mark: only the row and a toast. nudge: also send the worker a note. redeploy: abandon the run and deploy a fresh agent (once per task). The mod cannot stop a subagent.", "options": ["mark", "nudge", "redeploy"], "default": "mark" },
+    "lockStaleMinutes": { "type": "number", "title": "Lock stale minutes", "description": "A lock not refreshed for this long can be taken over by another session.", "default": 20 },
+    "commitTrailer": { "type": "string", "title": "Commit trailer", "description": "Git trailer key the review commit check looks for.", "default": "Inbox-Task" }
+  }
+}

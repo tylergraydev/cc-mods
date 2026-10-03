@@ -1,0 +1,6 @@
+{
+  "name": "goal-anchor",
+  "version": "0.1.0",
+  "description": "Anchors the session's goal, counts turns spent away from it, tracks unanswered questions, and nudges Claude back",
+  "types": "./types/index.d.ts"
+}

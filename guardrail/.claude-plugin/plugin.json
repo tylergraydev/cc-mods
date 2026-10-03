@@ -1,0 +1,18 @@
+{
+  "name": "guardrail",
+  "version": "0.1.0",
+  "description": "Blocks hook-skipping git commands and live data operations that have no successful dry run first; you can allow one at a time",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "blockNoVerify": { "type": "boolean", "title": "Block hook skipping", "description": "Deny git --no-verify, core.hooksPath overrides and HUSKY/SKIP env tricks", "default": true },
+    "blockLiveWithoutDryRun": { "type": "boolean", "title": "Block live data operations without a dry run", "description": "Deny sqlpackage publish, migrations, data scripts and --live commands until a dry run succeeded", "default": true },
+    "dryRunScope": { "type": "string", "title": "Dry-run scope", "description": "tool: a dry run unlocks the same tool and target. session: any successful dry run unlocks every live operation", "default": "tool", "options": ["tool", "session"] },
+    "extraLivePattern": { "type": "string", "title": "Extra live pattern", "description": "One case-insensitive regex tested against each command segment; write alternation with |", "default": "" },
+    "extraDryRunPattern": { "type": "string", "title": "Extra dry-run pattern", "description": "One case-insensitive regex for extra dry-run flags", "default": "" },
+    "disabledRules": { "type": "string", "title": "Disabled rules", "description": "Comma-separated rule ids: sqlpackage, dotnet-ef, bcp, sqlcmd, migration-cli, data-script, sync-migrate-script, live-flag, custom", "default": "" },
+    "allowMinutes": { "type": "number", "title": "Allowance minutes", "description": "How long a granted allowance lasts", "default": 10 },
+    "requireTypedAllow": { "type": "boolean", "title": "Require typed allow", "description": "Only a command you typed may run /guardrail allow", "default": true },
+    "announce": { "type": "boolean", "title": "Announce the policy to the model", "description": "Add a short guardrail section to the system prompt", "default": true }
+  }
+}

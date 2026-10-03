@@ -1,0 +1,71 @@
+{
+  "name": "dev-doctor",
+  "version": "0.1.0",
+  "description": "Read-only environment checks on session start (bash on PATH, .NET SDK/runtime, ports, git locks, worktrees, Docker, AUTH_SECRET, Node, Worker) with a status line, toast and pane",
+  "author": {
+    "name": "tylergraydev"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ports": {
+      "type": "string",
+      "title": "Ports to watch",
+      "description": "Comma list",
+      "default": "3000,3001"
+    },
+    "intervalMinutes": {
+      "type": "number",
+      "title": "Re-run every N minutes (0 = off)",
+      "default": 5,
+      "description": "Minutes between background re-runs; 0 turns the timer off."
+    },
+    "nodeMajor": {
+      "type": "number",
+      "title": "Expected Node major when the repo pins none",
+      "default": 22,
+      "description": "Node major to expect when the repo has no .nvmrc, .node-version or engines.node."
+    },
+    "workerProcess": {
+      "type": "string",
+      "title": "Worker process name",
+      "default": "Worker",
+      "description": "Image name of the background worker, with or without .exe."
+    },
+    "appHostProcess": {
+      "type": "string",
+      "title": "AppHost process name (blank = AppHost folder name)",
+      "default": "",
+      "description": "Image name of the AppHost; blank uses the AppHost folder name."
+    },
+    "dockerExitedHours": {
+      "type": "number",
+      "title": "Exited containers older than N hours fail",
+      "default": 24,
+      "description": "Exited containers older than this many hours fail the Docker check."
+    },
+    "lockStaleSeconds": {
+      "type": "number",
+      "title": "A git lock older than this fails",
+      "default": 120,
+      "description": "A git lock file older than this many seconds fails; younger ones warn."
+    },
+    "disabledChecks": {
+      "type": "string",
+      "title": "Check ids to skip, comma list",
+      "default": "",
+      "description": "Check ids to skip, comma separated (bash, dotnet-sdk, dotnet-runtime, ports, git-locks, git-worktrees, docker, auth-secret, node, worker)."
+    },
+    "rerunAfterTools": {
+      "type": "boolean",
+      "title": "Re-run volatile checks after port/process commands",
+      "default": true,
+      "description": "Re-run the volatile checks a few seconds after a Bash or PowerShell command that starts or stops apps, containers or worktrees."
+    },
+    "composeSection": {
+      "type": "boolean",
+      "title": "Tell the model the current FAILs",
+      "default": true,
+      "description": "Add a short system-prompt section naming the current FAILs and running apps that hold ports."
+    }
+  }
+}

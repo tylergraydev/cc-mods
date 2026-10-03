@@ -1,0 +1,9 @@
+{
+  "name": "claim-check",
+  "version": "0.1.0",
+  "description": "Flags confident claims about prod, data, deployments and tickets that no query backed up in the same turn (heuristic)",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "injectRule": { "type": "boolean", "title": "Add the verify-or-label rule to the system prompt", "description": "Appends a short rule telling the model to verify claims about external state or prefix them UNVERIFIED:.", "default": true }
+  }
+}

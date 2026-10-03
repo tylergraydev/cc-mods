@@ -1,0 +1,6 @@
+{
+  "name": "agent-deck",
+  "version": "0.1.0",
+  "description": "Live pane of the session's subagents: status, tool calls, answers, launch and nudge, spawn caps and model rules",
+  "types": "./types/index.d.ts"
+}

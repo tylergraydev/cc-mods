@@ -1,0 +1,14 @@
+{
+  "name": "arcade",
+  "version": "0.1.0",
+  "author": { "name": "tylergraydev" },
+  "description": "Tic-tac-toe, sudoku and tetris in a side pane, playable by keyboard, mouse or an Xbox controller",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "tttLevel": { "type": "string", "title": "Tic-tac-toe level", "description": "easy: the computer plays random legal moves. hard: it never loses.", "default": "hard", "options": ["easy", "hard"] },
+    "sudokuDifficulty": { "type": "string", "title": "Sudoku difficulty", "description": "How many clues a new puzzle keeps: easy 40, medium 32, hard about 26.", "default": "medium", "options": ["easy", "medium", "hard"] },
+    "tetrisSpeed": { "type": "string", "title": "Tetris speed", "description": "normal: gravity speeds up with the level. zen: it stays at one row a second.", "default": "normal", "options": ["normal", "zen"] },
+    "pauseOnTurnEnd": { "type": "boolean", "title": "Pause when Claude finishes", "description": "Pause a running game when Claude's turn ends, so a finished answer does not go unseen.", "default": true },
+    "controller": { "type": "boolean", "title": "Use an Xbox controller", "description": "Start the Windows XInput helper (bin/pad.exe) when the pane opens, if it is built.", "default": true }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "workbench",
+  "version": "0.1.0",
+  "description": "Hosts other mods' panes in one docked pane split into left and right columns; drag a tab across the divider to move a mod",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts"
+}

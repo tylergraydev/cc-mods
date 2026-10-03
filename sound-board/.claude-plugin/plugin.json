@@ -1,0 +1,19 @@
+{
+  "name": "sound-board",
+  "version": "0.1.0",
+  "description": "Plays a distinct sound for subagent spawn/finish/failure, permission asks, auto-mode denials, finished turns and more; pick, preview and mute per cue",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "enabled": { "type": "boolean", "title": "Sounds on", "description": "Master switch for every cue", "default": true },
+    "volume": { "type": "number", "title": "Volume %", "description": "0-200; 100 is the file's own level (engine player and mp3 on Windows)", "default": 100 },
+    "quietHours": { "type": "string", "title": "Quiet hours", "description": "HH:MM-HH:MM local time, may cross midnight (22:00-08:00); empty = none", "default": "" },
+    "minTurnSeconds": { "type": "number", "title": "Turn-done threshold (s)", "description": "Only chime when a main turn took at least this long; 0 = every answer", "default": 20 },
+    "speak": { "type": "boolean", "title": "Speak agent results", "description": "Also say 'agent done: <description>' when an agent finishes or fails", "default": false },
+    "cooldownMs": { "type": "number", "title": "Cooldown (ms)", "description": "One sound per cue within this window, so a burst of spawns plays once", "default": 300 },
+    "player": { "type": "string", "title": "Player", "description": "auto: PowerShell on Windows, the engine elsewhere", "default": "auto", "options": ["auto", "engine", "powershell"] },
+    "subagentScope": { "type": "string", "title": "Subagent cues for", "description": "all: every subagent, nested included. top: only agents the main thread started", "default": "all", "options": ["all", "top"] },
+    "askVia": { "type": "string", "title": "Permission cue source", "description": "dialog: when a permission dialog is shown to you. check: whenever the engine's verdict is ask (noisy in auto mode)", "default": "dialog", "options": ["dialog", "check"] },
+    "longToolSeconds": { "type": "number", "title": "Long command (s)", "description": "Cue when a Bash/PowerShell call ran at least this long; 0 = off", "default": 60 }
+  }
+}

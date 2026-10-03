@@ -1,0 +1,7 @@
+{
+  "name": "mod-menu",
+  "version": "0.2.0",
+  "description": "Manage mods, plugins, skills, hooks and MCP servers: tag them, switch profiles, sync your loadout via gh",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts"
+}

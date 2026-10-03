@@ -1,0 +1,17 @@
+{
+  "name": "handoff-watch",
+  "version": "0.2.0",
+  "description": "Watches context fill against the auto-compact point and nudges for a session handoff doc at a quiet moment, before auto-compact",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "showAt": { "type": "number", "title": "Show status from", "description": "Context fill (0-1, fraction of the auto-compact point) below which the status line stays empty.", "default": 0.3 },
+    "warnAt": { "type": "number", "title": "Nudge from", "description": "Context fill (0-1) from which a handoff nudge becomes due.", "default": 0.6 },
+    "urgentAt": { "type": "number", "title": "Urgent at", "description": "Context fill (0-1) at which the nudge fires at the next turn end, without waiting for a quiet turn or a commit.", "default": 0.85 },
+    "remindEvery": { "type": "number", "title": "Remind every", "description": "Extra fill (0-1) after a handoff or a nudge before the next nudge.", "default": 0.15 },
+    "maxWaitTurns": { "type": "number", "title": "Max turns to wait for a checkpoint", "description": "Busy turns to wait for a quiet turn or a git commit before nudging anyway. 0 nudges at the first turn end.", "default": 3 },
+    "handoffDir": { "type": "string", "title": "Handoff folder", "description": "Where handoff docs go, relative to the project root. Empty = the project root.", "default": ".claude/handoffs" },
+    "compactInstructions": { "type": "boolean", "title": "Steer compaction summaries", "description": "Before a compaction of the main conversation, ask the summarizer to keep the goal, files, verified vs assumed facts, open questions, next steps and the last handoff path.", "default": true },
+    "autoClear": { "type": "boolean", "title": "Clear after a handoff", "description": "When a handoff doc is written during a turn, run /clear once that turn's answer is out.", "default": true },
+    "autoResume": { "type": "boolean", "title": "Resume after /clear", "description": "After a /clear that follows a handoff doc (automatic or typed), submit a prompt into the fresh conversation that reads the doc and continues its next steps.", "default": true }
+  }
+}

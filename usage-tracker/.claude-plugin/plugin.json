@@ -1,0 +1,6 @@
+{
+  "name": "usage-tracker",
+  "version": "0.1.0",
+  "description": "Live 5-hour and 7-day usage for Claude Code and Codex, with pace markers, burn-rate projections and sparklines",
+  "types": "./types/index.d.ts"
+}
