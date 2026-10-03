@@ -373,3 +373,25 @@ export function modConfig(
   }
   return out
 }
+
+/** The slash command that shows a mod's pane, by mod name. Mods with no pane are absent. */
+export const PANE_COMMANDS: Record<string, string> = {
+  'agent-deck': 'deck',
+  arcade: 'arcade',
+  'dev-doctor': 'dev-doctor',
+  'diff-viewer': 'diff-viewer',
+  'doom-pane': 'doom',
+  inbox: 'inbox',
+  'nes-pane': 'nes',
+  'rail-runner': 'rail-runner',
+  'solution-explorer': 'explorer',
+  'sound-board': 'sounds',
+  'usage-tracker': 'usage-tracker',
+  workbench: 'workbench',
+}
+
+/** The command that shows this mod's pane now: a loaded mod with a pane, never this menu itself. */
+export function showCommand(mod: ModEntry): string | undefined {
+  if (mod.isSelf || (mod.state !== 'on' && mod.state !== 'turning-off')) return undefined
+  return PANE_COMMANDS[mod.name]
+}

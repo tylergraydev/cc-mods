@@ -15,7 +15,7 @@ const ROWS = [
   { key: 'theme', label: 'Theme', kind: 'choice', value: 'dark', options: ['dark', 'light'], provider: { plugin: 'claude-code', tier: 'user' }, isLocked: false },
 ] as const
 
-type Opts = { settings?: string; denySet?: string; missing?: string[]; noManifest?: string[] }
+type Opts = { settings?: string; denySet?: string; missing?: string[]; noManifest?: string[]; commands?: string[] }
 
 /** The files, the settings and the engine ops beneath the plugin, recorded. */
 function world(on: On, opts: Opts = {}) {
@@ -69,7 +69,7 @@ function world(on: On, opts: Opts = {}) {
     statuses.push((e as { text?: string }).text)
     return { value: undefined }
   })
-  on('command.list', async () => ({ value: [] }))
+  on('command.list', async () => ({ value: (opts.commands ?? []).map(name => ({ name, description: '', source: 'plugin' })) as never }))
   const env = () => (JSON.parse(files.get(SETTINGS)!.replace(/^\uFEFF/, '')) as { env: { CLAUDE_CODE_PLUGIN_DIRS: string } }).env.CLAUDE_CODE_PLUGIN_DIRS
   return { store, files, writes, sets, toasts, statuses, opened, env }
 }
@@ -100,6 +100,36 @@ test('both surfaces: versions shown, the self row has no toggle, workbench does'
     expect(await ui.find({ key: 'toggle-doom-pane' })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('show runs the loaded mod command, with the workbench dock opened first', async ($, on) => {
+  const runs: string[] = []
+  const w = world(on, { commands: ['workbench', 'deck'] })
+  on('command.run', { command: 'deck' }, async () => {
+    runs.push('deck')
+    return { text: 'deck opened' }
+  })
+  await run($)
+  const ui = await mount($)
+  // no pane: no button; this menu: no button; a loaded mod with a pane: a button
+  expect(await ui.find({ key: 'show-guardrail' })).toBeUndefined()
+  expect(await ui.find({ key: 'show-mod-menu' })).toBeUndefined()
+  expect(await ui.find({ key: 'show-agent-deck' })).toBeDefined()
+  expect(await ui.find({ key: 'show-workbench' })).toBeDefined()
+  const before = w.opened.length
+  await ui.press({ key: 'show-agent-deck' })
+  expect(w.opened.slice(before)).toEqual(['workbench'])
+  expect(runs).toEqual(['deck'])
+  await ui.unmount()
+})
+
+test('show is not offered for a mod that is not loaded yet, and says so when its command is missing', async ($, on) => {
+  const w = world(on, { commands: ['workbench'] })
+  await run($)
+  const ui = await mount($)
+  await ui.press({ key: 'show-agent-deck' })
+  expect(w.toasts.at(-1)).toContain('/deck is not registered')
+  await ui.unmount()
 })
 
 test('turning a mod off writes once, with a backup, and turning it on restores the order', async ($, on) => {

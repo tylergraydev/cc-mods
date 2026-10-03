@@ -66,6 +66,7 @@ import {
   rewriteDirs,
   sameDirs,
   sepFor,
+  showCommand,
   splitDirs,
   statusText,
   stateText,
@@ -79,8 +80,8 @@ import type { Edit } from './settings-edit'
 const PANE = 'mod-menu'
 const TITLE = 'Mods'
 const HOTKEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-// not q r s t y n: close, refresh, sync, edit tags, plan apply, plan cancel
-const LETTERS = 'abcdefghijklmopuvwxz'.split('')
+// not q r s t y n o: close, refresh, sync, edit tags, plan apply, plan cancel, show pane
+const LETTERS = 'abcdefghijklmpuvwxz'.split('')
 const HINT = '[list|on <id>|off <id>|tag <id> <tags>|use <tag> [--dry-run]|apply|sync|pull|push [--force]|gh]'
 
 const EMPTY: ModMenuSnapshot = { mods: [], settingsPath: '', readAt: 0 }
@@ -870,6 +871,22 @@ async function ensureDock($: EngineInterface) {
   }
 }
 
+/** Shows a mod's pane by running the mod's own command: the dock opens first so the pane seats at any width. */
+async function showPane($: EngineInterface, mod: ModEntry) {
+  const command = showCommand(mod)
+  if (command === undefined) return
+  await ensureDock($)
+  try {
+    if (!(await $.command.list()).some(one => one.name === command)) {
+      $.ui.toast(`mod-menu: /${command} is not registered; is ${mod.name} loaded?`)
+      return
+    }
+    await $.command.run({ command, args: '' })
+  } catch (err) {
+    $.ui.toast(`mod-menu: could not show ${mod.name}: ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
 async function runCommand($: EngineInterface, args: string | undefined) {
   const cmd = parseCommand(args)
   if (cmd.kind === 'error') return { text: cmd.text }
@@ -1127,7 +1144,8 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
     const isPending = mod.state === 'turning-off' || mod.state === 'turning-on'
     const label = `${isOpen ? '▾' : '▸'} ${mod.name}${mod.version ? ` ${mod.version}` : ''}`
     const tone = isPending ? { color: 'yellow' } : { dimColor: mod.state === 'off' || mod.note !== undefined }
-    const room = Math.max(8, columns - label.length - 16)
+    const show = showCommand(mod)
+    const room = Math.max(8, columns - label.length - 16 - (show !== undefined ? 6 : 0))
 
     return (
       <Box key={`mod-${mod.id}`} flexDirection="column">
@@ -1154,6 +1172,12 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
             {label}
           </Button>
           <Text>  </Text>
+          {show !== undefined && (
+            <Button key={`show-${mod.id}`} {...(isOpen ? { hotkey: 'o' } : {})} onPress={() => void showPane($, mod)}>
+              show
+            </Button>
+          )}
+          {show !== undefined && <Text>  </Text>}
           {tagsCell(item, `tags-mod-${mod.id}`)}
           <Text>  </Text>
           <Box key={`state-${mod.id}`} flexDirection="row">

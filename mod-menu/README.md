@@ -79,7 +79,9 @@ Sync never changes settings by itself: it only reports `N items differ here`. A 
 - `/mod-menu tag <id> <tags>`, `use <tag> [--dry-run]`, `apply`.
 - `/mod-menu sync`, `pull`, `push [--force]`, `gh` (re-check login), `forget <id>` (a tombstone that syncs the removal).
 
-Hotkeys: `1`...`9`, `0` toggle the first ten mods; `s` sync, `r` refresh, `q` close, `t` edit tags of the open row, `y` / `n` apply or cancel a previewed profile.
+Hotkeys: `1`...`9`, `0` toggle the first ten mods; `s` sync, `r` refresh, `q` close, `t` edit tags of the open row, `o` show the open row's pane, `y` / `n` apply or cancel a previewed profile.
+
+Every loaded mod that has a pane carries a `show` button on its row (hotkey `o` on the open row). It opens the workbench dock first, then runs the mod's own command (`/deck`, `/arcade`, `/sounds`, ...), so the pane lands in the dock at any terminal width. Which command shows which mod is the `PANE_COMMANDS` table in `hooks/mods.ts`; a mod that is not loaded yet shows no button.
 
 ## Limits
 
