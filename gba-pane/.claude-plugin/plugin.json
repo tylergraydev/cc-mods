@@ -1,0 +1,13 @@
+{
+  "name": "gba-pane",
+  "version": "0.1.0",
+  "description": "Play Game Boy Advance games in a side pane with /gba; they pause when Claude finishes or needs you.",
+  "author": { "name": "tylergraydev", "url": "https://github.com/tylergraydev" },
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "romDir": { "type": "string", "title": "ROM folder", "description": "Folder /gba searches by name and the picker lists (.gba and .zip files). Empty: the picker still lists recent ROMs and the run folder.", "default": "" },
+    "hd": { "type": "boolean", "title": "Sharper picture", "description": "2x2 pixels per terminal cell (quadrant glyphs); off draws 1x2 half blocks.", "default": true },
+    "idlePauseSeconds": { "type": "number", "title": "Idle pause (seconds)", "description": "Pause after this long with no key or controller input; 0 never.", "default": 30 }
+  }
+}
