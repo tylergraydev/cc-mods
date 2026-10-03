@@ -378,6 +378,7 @@ export function modConfig(
 export const PANE_COMMANDS: Record<string, string> = {
   'agent-deck': 'deck',
   arcade: 'arcade',
+  'booster-pane': 'booster',
   'dev-doctor': 'dev-doctor',
   'diff-viewer': 'diff-viewer',
   'doom-pane': 'doom',

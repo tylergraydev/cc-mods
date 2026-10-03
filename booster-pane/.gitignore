@@ -1,0 +1,8 @@
+# Written by Claude Code when it loads the plugin
+.claude-plugin/types/
+
+# Caches, the collection and downloaded images: never committed
+run/
+
+# Python bytecode
+scripts/__pycache__/

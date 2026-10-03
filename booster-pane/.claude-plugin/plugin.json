@@ -1,0 +1,13 @@
+{
+  "name": "booster-pane",
+  "version": "0.1.0",
+  "author": { "name": "tylergraydev" },
+  "description": "Open pretend Pokémon TCG booster packs by set in a side pane: card art in the terminal, a collection and pull stats",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "apiKey": { "type": "string", "title": "Pokémon TCG API key", "description": "Optional X-Api-Key for api.pokemontcg.io (20,000 requests a day instead of 1,000 and 30 a minute). New keys can no longer be registered; existing ones work until 2027-03-01. Sent only as a request header; never logged or cached.", "default": "" },
+    "artMode": { "type": "string", "title": "Card art", "description": "card: the whole card. art: only the illustration window, cropped approximately.", "default": "card", "options": ["card", "art"] },
+    "source": { "type": "string", "title": "Card data source", "description": "auto: TCGdex, falling back to api.pokemontcg.io when it fails. Or one source only.", "default": "auto", "options": ["auto", "pokemontcg", "tcgdex"] },
+    "python": { "type": "string", "title": "Python", "description": "Python 3 with Pillow, used to turn card images into terminal cells. A command on PATH or a full path to python.exe.", "default": "python" }
+  }
+}

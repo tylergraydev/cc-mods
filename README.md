@@ -6,10 +6,13 @@ Mods for Claude Code: plugins of function hooks that add side panes, status line
 | --- | --- |
 | [agent-deck](agent-deck/) | Live pane of the session's subagents: status, tool calls, answers, launch and nudge, spawn caps and model rules |
 | [arcade](arcade/) | Tic-tac-toe, sudoku, tetris, video poker, blackjack and UNO in a side pane, playable by keyboard, mouse or an Xbox controller |
+| [booster-pane](booster-pane/) | Open pretend Pokémon TCG booster packs by set: card art in the terminal, a collection and pull stats |
 | [claim-check](claim-check/) | Flags confident claims about prod, data, deployments and tickets that no query backed up in the same turn |
 | [dev-doctor](dev-doctor/) | Read-only environment checks on session start: bash, .NET, ports, git locks, Docker, Node and more |
 | [diff-viewer](diff-viewer/) | Shows what Claude changed per turn or per session as real unified hunks, with a git diff fallback |
 | [doom-pane](doom-pane/) | Play DOOM (Freedoom) in a side pane with `/doom`; it pauses when Claude finishes or needs you |
+| [gb-pane](gb-pane/) | Play Game Boy and Game Boy Color games in a side pane with `/gb`; picker, zips, saves, controller |
+| [gba-pane](gba-pane/) | Play Game Boy Advance games in a side pane with `/gba` on mGBA; picker, zips, saves, L and R |
 | [goal-anchor](goal-anchor/) | Anchors the session's goal, counts turns spent away from it and nudges Claude back |
 | [guardrail](guardrail/) | Blocks hook-skipping git commands and live data operations that have no successful dry run first |
 | [handoff-watch](handoff-watch/) | Watches context fill and nudges for a handoff doc before auto-compact; can clear and resume on its own |

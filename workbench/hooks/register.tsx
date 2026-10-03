@@ -14,7 +14,7 @@ const PANE = 'workbench'
 const TITLE = 'Workbench'
 const STORE_KEY = 'layout'
 // Mods that fill a workbench slot; `/workbench host <pane>` adds another.
-const SUPPORTED = ['agent-deck', 'usage-tracker', 'rail-runner', 'inbox', 'dev-doctor', 'mod-menu', 'sound-board', 'arcade', 'solution-explorer', 'diff-viewer']
+const SUPPORTED = ['agent-deck', 'usage-tracker', 'rail-runner', 'inbox', 'dev-doctor', 'mod-menu', 'sound-board', 'arcade', 'solution-explorer', 'diff-viewer', 'booster-pane']
 
 const layout = atom({ plugin: 'workbench', key: 'layout' } as const, EMPTY_LAYOUT)
 const members = atom({ plugin: 'workbench', key: 'members' } as const, [] as WorkbenchMember[])
