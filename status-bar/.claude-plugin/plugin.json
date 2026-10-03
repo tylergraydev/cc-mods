@@ -1,0 +1,13 @@
+{
+  "name": "status-bar",
+  "version": "0.1.0",
+  "description": "Folds every plugin's status line into one line under the prompt, or one wrapped row above it",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "mode": { "type": "string", "title": "Layout", "description": "status: one status line under the prompt. band: one wrapped row above the prompt (terminal and desktop only).", "default": "status", "options": ["status", "band"] },
+    "maxSegment": { "type": "number", "title": "Segment length", "description": "Each plugin's text is cut to this many cells with an ellipsis (8 to 200).", "default": 40 },
+    "width": { "type": "number", "title": "Line width", "description": "Terminal width to fit the status line to, used until a band draw reports the real width (40 to 1000).", "default": 160 },
+    "order": { "type": "string", "title": "Order", "description": "Comma-separated plugin names shown first; the rest follow alphabetically.", "default": "" },
+    "hide": { "type": "string", "title": "Hidden", "description": "Comma-separated plugin names whose statuses are dropped.", "default": "" }
+  }
+}
