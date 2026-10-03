@@ -1,0 +1,11 @@
+{
+  "name": "diff-viewer",
+  "version": "0.1.0",
+  "description": "Diff pane: what Claude changed this turn and this session, per file, plus git diff on demand",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "contextLines": { "type": "number", "title": "Context lines", "description": "Unchanged lines shown around each change in a hunk (0-10).", "default": 3 },
+    "maxChanges": { "type": "number", "title": "Changes kept", "description": "How many recorded file changes the session keeps; older ones are dropped (5-500).", "default": 60 },
+    "wrap": { "type": "boolean", "title": "Wrap long lines", "description": "Wrap long diff lines instead of cutting them at the pane edge. w toggles it for the session.", "default": false }
+  }
+}
