@@ -381,6 +381,8 @@ export const PANE_COMMANDS: Record<string, string> = {
   'dev-doctor': 'dev-doctor',
   'diff-viewer': 'diff-viewer',
   'doom-pane': 'doom',
+  'gb-pane': 'gb',
+  'gba-pane': 'gba',
   inbox: 'inbox',
   'nes-pane': 'nes',
   'rail-runner': 'rail-runner',
