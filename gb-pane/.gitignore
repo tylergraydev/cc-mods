@@ -1,0 +1,15 @@
+# Written by Claude Code when it loads the plugin
+.claude-plugin/types/
+
+# The run folder: control file, save files, your ROMs
+run/
+
+# Native build
+native/obj/
+
+# Test output and generated test ROMs
+native/test/*.txt
+native/test/*.gb
+native/test/*.gbc
+native/test/*.png
+native/test/saves/
