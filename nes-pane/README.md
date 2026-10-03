@@ -110,7 +110,7 @@ Set them in `/config` under nes-pane.
 
 ## Picture quality
 
-The pane draws the game with block characters, 2×2 pixels per terminal cell, box-filtered, so detail depends on the pane's size: about 160×120 pixels at 80 columns, against the NES's 256×224 (the 8-line overscan is cropped at top and bottom). Small HUD text blurs. A smaller terminal font or a wider pane gives a sharper picture.
+The pane draws the game with block characters, 2×2 pixels per terminal cell, box-filtered, so detail depends on the pane's size: about 160×60 pixels at 80 columns, against the NES's 256×224 (the 8-line overscan is cropped at top and bottom). Small HUD text blurs. A smaller terminal font or a wider pane gives a sharper picture.
 
 Real pixels in the pane would need a terminal with the kitty graphics protocol (kitty, Ghostty), and the desktop app draws neither `Raster` nor `Image`: there the pane says the NES plays in the terminal. `/nes window` is the full-resolution option.
 
