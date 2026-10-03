@@ -1,0 +1,11 @@
+{
+  "name": "solution-explorer",
+  "version": "0.1.0",
+  "description": "Solution Explorer-style file tree in a side pane: projects from .sln/.slnx, git status, and the files Claude touched this session",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "hide": { "type": "string", "title": "Also hide", "description": "Comma-separated names, *.ext patterns or relative paths to hide in addition to the defaults and the root .gitignore (e.g. TestResults, *.user, docs/old).", "default": "" },
+    "gitStatus": { "type": "boolean", "title": "Git status marks", "description": "Run git.exe status in the root when the pane opens, on refresh and after each turn, and mark changed files.", "default": true },
+    "maxEntries": { "type": "number", "title": "Max entries per folder", "description": "A folder with more entries shows the first N and a '… +K more' row.", "default": 400 }
+  }
+}
