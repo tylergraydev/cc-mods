@@ -1,0 +1,232 @@
+import { expect, test } from 'claude-code/testing'
+
+import type { BlackjackState } from '../types'
+import type { Card, Suit } from '../hooks/cards'
+import { shoe } from '../hooks/cards'
+import { BET_STEPS, CUT, blackjackGame, canDouble, canSplit, handValue, stepFor } from '../hooks/blackjack'
+import type { Key } from '../hooks/game'
+
+const cards = (spec: string): Card[] => spec.split(' ').map(t => ({ rank: Number(t.slice(0, -1)), suit: t.slice(-1) as Suit }))
+const text = (rows: { text: string }[][]) => rows.map(r => r.map(s => s.text).join(''))
+const filler = (): Card[] => Array.from({ length: 120 }, () => ({ rank: 4, suit: 'C' as Suit }))
+
+/** A table whose shoe starts with `order` (player, dealer up, player, dealer hole, then the draws) and is padded so it never reshuffles. */
+const rig = (order: string, chips = 500, bet = 10): BlackjackState => ({ ...blackjackGame.init(3, {}, 0), chips, bet, shoe: [...cards(order), ...filler()] })
+const press = (s: BlackjackState, ...keys: Key[]): BlackjackState => keys.reduce((a, k) => blackjackGame.onKey(a, k, 0), s)
+const dealt = (order: string, ...keys: Key[]): BlackjackState => press(rig(order), 'c:d', ...keys)
+
+test('hand values: soft and hard aces', () => {
+  expect(handValue(cards('1S 6H'))).toEqual({ total: 17, soft: true })
+  expect(handValue(cards('1S 6H 10D'))).toEqual({ total: 17, soft: false })
+  expect(handValue(cards('1S 1H 9D'))).toEqual({ total: 21, soft: true })
+  expect(handValue(cards('13S 12H'))).toEqual({ total: 20, soft: false })
+  expect(handValue(cards('1S 13H'))).toEqual({ total: 21, soft: true })
+  expect(handValue(cards('10S 6H 9D'))).toEqual({ total: 25, soft: false })
+})
+
+test('bet steps cycle, move with the arrows, clamp to the chips and a deal debits the bet', () => {
+  expect(BET_STEPS).toEqual([10, 20, 50, 100, 200])
+  const s = rig('10S 6H 9D 7C')
+  expect(press(s, 'c:b').bet).toBe(20)
+  expect(press(s, 'c:b', 'c:b', 'c:b', 'c:b', 'c:b').bet).toBe(10)
+  expect(press(s, 'up', 'up', 'up').bet).toBe(100)
+  expect(press(s, 'down').bet).toBe(10)
+  const poor = rig('10S 6H 9D 7C', 30)
+  expect(press(poor, 'c:b').bet).toBe(20)
+  expect(press(poor, 'c:b', 'c:b').bet).toBe(10)
+  expect(press(poor, 'up', 'up', 'up').bet).toBe(20)
+  expect(stepFor(200, 60)).toBe(50)
+  const d = press({ ...s, bet: 50 }, 'c:d')
+  expect(d.chips).toBe(450)
+  expect(d.phase).toBe('play')
+  expect(d.hands[0]?.cards).toHaveLength(2)
+  expect(d.dealer).toHaveLength(2)
+  expect(d.holeShown).toBe(false)
+})
+
+test('a player natural pays 3:2', () => {
+  const s = dealt('1S 6H 13D 9C')
+  expect(s.phase).toBe('done')
+  expect(s.chips).toBe(515)
+  expect(s.net).toBe(15)
+  expect(s.natural).toBe(true)
+  expect(s.hands[0]?.outcome).toBe('blackjack')
+  expect(s.holeShown).toBe(true)
+})
+
+test('the dealer peeks: a natural on an ace or ten beats a player 20 at once, two naturals push', () => {
+  const lose = dealt('10S 1H 10D 13C')
+  expect(lose.phase).toBe('done')
+  expect(lose.hands[0]?.outcome).toBe('lose')
+  expect(lose.chips).toBe(490)
+  expect(lose.net).toBe(-10)
+  const push = dealt('1S 1H 13D 13C')
+  expect(push.hands[0]?.outcome).toBe('push')
+  expect(push.chips).toBe(500)
+  expect(push.natural).toBe(false)
+  const ten = dealt('10S 10H 9D 7C')
+  expect(ten.phase).toBe('play')
+  expect(ten.holeShown).toBe(false)
+  const ace = dealt('10S 1H 9D 5C')
+  expect(ace.phase).toBe('play')
+})
+
+test('hitting to a bust loses without the dealer drawing; hitting to 21 stands by itself', () => {
+  const bust = dealt('10S 6H 6D 10C 9S', 'c:h')
+  expect(bust.phase).toBe('done')
+  expect(bust.hands[0]?.outcome).toBe('bust')
+  expect(bust.dealer).toHaveLength(2)
+  expect(bust.chips).toBe(490)
+  expect(bust.holeShown).toBe(true)
+  const win = dealt('5S 6H 6D 10C 10S', 'c:h')
+  expect(win.phase).toBe('done')
+  expect(win.dealer.map(x => x.rank)).toEqual([6, 10, 4])
+  expect(win.chips).toBe(510)
+  const aKey = dealt('5S 6H 6D 10C 10S', 'a')
+  expect(aKey.chips).toBe(510)
+})
+
+test('the dealer hits 16 and soft 16 and stands on soft 17 and hard 17', () => {
+  const hard16 = dealt('10S 6H 9D 10C 2S', 'c:s')
+  expect(hard16.dealer.map(x => x.rank)).toEqual([6, 10, 2])
+  expect(hard16.hands[0]?.outcome).toBe('win')
+  const soft16 = dealt('10S 1H 9D 5C 2S', 'c:s')
+  expect(soft16.dealer.map(x => x.rank)).toEqual([1, 5, 2])
+  expect(soft16.hands[0]?.outcome).toBe('win')
+  const soft17 = dealt('10S 1H 9D 6C', 'c:s')
+  expect(soft17.dealer).toHaveLength(2)
+  expect(soft17.hands[0]?.outcome).toBe('win')
+  const hard17 = dealt('10S 10H 9D 7C', 'b')
+  expect(hard17.dealer).toHaveLength(2)
+  expect(hard17.hands[0]?.outcome).toBe('win')
+})
+
+test('a dealer bust pays double, equal totals push and the dealer total wins otherwise', () => {
+  const bust = dealt('10S 6H 8D 10C 10S', 'c:s')
+  expect(bust.chips).toBe(510)
+  expect(bust.message).toContain('Dealer busts')
+  const push = dealt('10S 10H 8D 8C', 'c:s')
+  expect(push.chips).toBe(500)
+  expect(push.hands[0]?.outcome).toBe('push')
+  const lose = dealt('10S 10H 8D 9C', 'c:s')
+  expect(lose.chips).toBe(490)
+  expect(lose.net).toBe(-10)
+})
+
+test('double takes one card for twice the bet and is refused with three cards or short chips', () => {
+  const s = dealt('5S 6H 6D 10C 10S', 'c:x')
+  expect(s.hands[0]?.doubled).toBe(true)
+  expect(s.hands[0]?.bet).toBe(20)
+  expect(s.hands[0]?.cards).toHaveLength(3)
+  expect(s.phase).toBe('done')
+  expect(s.chips).toBe(500 - 20 + 40)
+  expect(s.net).toBe(20)
+  const three = dealt('2S 6H 3D 10C 2D', 'c:h')
+  expect(three.phase).toBe('play')
+  expect(canDouble(three)).toBe(false)
+  const refused = press(three, 'select')
+  expect(refused.message).toContain('Cannot double')
+  expect(refused.hands[0]?.cards).toHaveLength(3)
+  const short = press(rig('5S 6H 6D 10C 10S', 15), 'c:d')
+  expect(canDouble(short)).toBe(false)
+  expect(press(short, 'c:x').hands[0]?.bet).toBe(10)
+})
+
+test('a pair of 8s splits into two hands played in turn and settled separately', () => {
+  let s = dealt('8S 6H 8D 10C 10S 3S 10D 5S')
+  expect(canSplit(s)).toBe(true)
+  s = press(s, 'c:p')
+  expect(s.hands).toHaveLength(2)
+  expect(s.chips).toBe(480)
+  expect(s.hands.map(h => h.cards.map(x => x.rank))).toEqual([[8, 10], [8, 3]])
+  expect(s.active).toBe(0)
+  expect(canSplit(s)).toBe(false)
+  s = press(s, 'c:s')
+  expect(s.active).toBe(1)
+  s = press(s, 'c:h')
+  expect(s.phase).toBe('done')
+  expect(s.hands.map(h => h.outcome)).toEqual(['lose', 'push'])
+  expect(s.chips).toBe(490)
+  expect(s.net).toBe(-10)
+  expect(s.natural).toBe(false)
+})
+
+test('a split is refused for 10 and king, for a second split and for short chips', () => {
+  const tenKing = dealt('10S 6H 13D 10C')
+  expect(canSplit(tenKing)).toBe(false)
+  expect(press(tenKing, 'right').message).toContain('Cannot split')
+  expect(press(tenKing, 'right').hands).toHaveLength(1)
+  const again = dealt('8S 6H 8D 10C 8H 3S', 'c:p')
+  expect(again.hands).toHaveLength(2)
+  expect(canSplit(again)).toBe(false)
+  expect(press(again, 'c:p').hands).toHaveLength(2)
+  const short = press(rig('8S 6H 8D 10C 3S 3D', 15), 'c:d')
+  expect(canSplit(short)).toBe(false)
+})
+
+test('split aces get one card each and a 21 on them pays 1:1', () => {
+  const s = dealt('1S 6H 1D 10C 10S 10D 13S', 'c:p')
+  expect(s.phase).toBe('done')
+  expect(s.hands.every(h => h.done && h.cards.length === 2)).toBe(true)
+  expect(s.hands.map(h => h.outcome)).toEqual(['win', 'win'])
+  expect(s.chips).toBe(520)
+  expect(s.natural).toBe(false)
+})
+
+test('below the cut the next deal reshuffles the shoe', () => {
+  expect(CUT).toBe(78)
+  const low: BlackjackState = { ...blackjackGame.init(5, {}, 0), chips: 500, shoe: shoe(6).slice(0, 50) }
+  const d = press(low, 'c:d')
+  expect(d.reshuffled).toBe(true)
+  expect(d.shoe.length).toBe(308)
+  const full = press({ ...low, shoe: shoe(6).slice(0, 200) }, 'c:d')
+  expect(full.reshuffled).toBe(false)
+  expect(full.shoe.length).toBeLessThan(200)
+})
+
+test('a rebuy works only when below the minimum bet and never mid-hand', () => {
+  const broke = rig('10S 6H 9D 7C', 5)
+  expect(press(broke, 'c:d').message).toContain('Out of chips')
+  expect(press(broke, 'c:d').phase).toBe('bet')
+  const bought = press(broke, 'c:r')
+  expect(bought.chips).toBe(500)
+  expect(bought.message).toBe('Rebought 500')
+  expect(press(rig('10S 6H 9D 7C', 50), 'c:r').chips).toBe(50)
+  const mid = { ...dealt('10S 10H 9D 7C'), chips: 0 }
+  expect(press(mid, 'c:r')).toBe(mid)
+})
+
+test('the score counts w, l, p and bj once per round and the best chips', () => {
+  const nat = dealt('1S 6H 13D 9C')
+  expect(blackjackGame.score(nat)).toEqual({ counters: { w: 1, bj: 1 }, bests: { chips: { value: 515 } } })
+  expect(blackjackGame.score({ ...nat, recorded: true })).toBeUndefined()
+  expect(blackjackGame.score(dealt('10S 10H 8D 9C', 'c:s'))?.counters).toEqual({ l: 1 })
+  expect(blackjackGame.score(dealt('10S 10H 8D 8C', 'c:s'))?.counters).toEqual({ p: 1 })
+  expect(blackjackGame.score(dealt('10S 10H 9D 7C'))).toBeUndefined()
+  expect(blackjackGame.isOver(nat)).toBe(true)
+})
+
+test('the board fits 40 columns, hides the hole card until the dealer plays and windows a long hand', () => {
+  const play = dealt('10S 10H 9D 7C')
+  const v = blackjackGame.view(play, 40, 30)
+  const rows = text(v.board)
+  for (const line of rows) expect(line.length).toBeLessThanOrEqual(40)
+  expect(rows.join('\n')).toContain('[??]')
+  expect(rows.join('\n')).toContain('You  19')
+  expect(v.controls?.map(x => x.hotkey)).toEqual(['h', 's', 'x'])
+  const done = press(play, 'c:s')
+  expect(text(blackjackGame.view(done, 40, 30).board).join('\n')).not.toContain('[??]')
+  expect(text(blackjackGame.view(done, 40, 30).board).join('\n')).toContain('d / Enter: next hand')
+  expect(blackjackGame.view(done, 40, 30).controls?.map(x => x.hotkey)).toEqual(['b', 'd'])
+  const long = { ...play, hands: [{ ...(play.hands[0] as BlackjackState['hands'][number]), cards: cards('2S 3S 2H 3H 2D 3D 2C 3C') }] }
+  const wide = text(blackjackGame.view(long, 30, 30).board)
+  for (const line of wide) expect(line.length).toBeLessThanOrEqual(30)
+  expect(wide.join('\n')).toContain('more')
+  const split = press(dealt('8S 6H 8D 10C 10S 3S'), 'c:p')
+  expect(blackjackGame.view(split, 40, 30).controls?.map(x => x.hotkey)).toEqual(['h', 's', 'x'])
+  expect(text(blackjackGame.view(split, 40, 30).board).join('\n')).toContain('Hand 2')
+})
+
+test('typed keys match the buttons: h hits and p splits on the board', () => {
+  expect(blackjackGame.keyboard).toEqual({ h: 'c:h', p: 'c:p' })
+})

@@ -1,14 +1,14 @@
-import { mergeSegs, seg } from './game'
+import type { Card, Suit } from '../types'
+import { fmtNum, mergeSegs, seg } from './game'
 import type { Seg } from './game'
 import { shuffle } from './rng'
 
-// Playing cards for the card games of pack 2 (video poker, UNO-style hands):
-// a deck, a seeded shuffle, hand helpers and a compact renderer to Seg runs.
-// Pack 1 does not use it.
+// Playing cards for the card games (video poker, blackjack, UNO): a deck, a
+// seeded shuffle, hand helpers and a compact renderer to Seg runs, plus the
+// fixed-width cells the tap geometry stands on.
 
-export type Suit = 'S' | 'H' | 'D' | 'C' | 'J'
-/** 1 = ace .. 13 = king; 0 = a joker. */
-export type Card = { rank: number; suit: Suit }
+// The card types live in the contract (../types) with the saved states that hold them.
+export type { Card, Suit } from '../types'
 
 const SUITS: Suit[] = ['S', 'H', 'D', 'C']
 const GLYPH: Record<Suit, string> = { S: '♠', H: '♥', D: '♦', C: '♣', J: '★' }
@@ -98,3 +98,54 @@ export function handSegs(cards: readonly Card[], cols: number, opts: { ascii?: b
   if (tail.length) (rows[1] as Seg[]).push(...tail)
   return rows.map(mergeSegs)
 }
+
+// ---------- the card games' shared pieces ----------
+
+/** The play chips a fresh bankroll (and a rebuy) holds. */
+export const START_CHIPS = 500
+
+/** `decks` ordered decks in one pile, for a blackjack shoe. */
+export function shoe(decks: number): Card[] {
+  const out: Card[] = []
+  for (let i = 0; i < decks; i++) out.push(...deck())
+  return out
+}
+
+/** A card cell is 5 columns wide plus a 1-column gap: the stride of every row of cards. */
+export const CELL = 6
+const CELL_W = CELL - 1
+
+/** One card padded to exactly 5 columns, so a row of cards lines up whatever the cards are. */
+export function cardCell(card: Card, opts: { ascii?: boolean } = {}): Seg[] {
+  const red = card.suit === 'H' || card.suit === 'D'
+  return [seg(cardLabel(card, opts).padEnd(CELL_W), red ? { color: 'red' } : {})]
+}
+
+/** The face-down card, as wide as a cell. */
+export const backCell = (): Seg[] => [seg('[??] ', { dim: true })]
+
+/** Cells joined by one space after a 1-column indent: cell `i` starts at column `indent + i * CELL`. */
+export function rowOfCells(cells: readonly Seg[][], indent = 1): Seg[] {
+  const out: Seg[] = [seg(' '.repeat(indent))]
+  cells.forEach((cell, i) => {
+    if (i > 0) out.push(seg(' '))
+    out.push(...cell)
+  })
+  return mergeSegs(out)
+}
+
+/** The cell under column `x` of a row built by `rowOfCells`; undefined on the indent or a gap. */
+export function cellAtX(x: number, indent = 1): number | undefined {
+  if (x < indent) return undefined
+  const off = x - indent
+  return off % CELL < CELL_W ? Math.floor(off / CELL) : undefined
+}
+
+/** `1234` as `1,234`. */
+export const fmtChips = (n: number): string => fmtNum(n)
+
+/** Whether `chips` cover the smallest bet. */
+export const bankOk = (chips: number, minBet: number): boolean => chips >= minBet
+
+/** The chips a rebuy hands over. */
+export const rebuy = (): number => START_CHIPS

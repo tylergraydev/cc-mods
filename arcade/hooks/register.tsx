@@ -1,15 +1,19 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, HookStream, ProcessSpawnChunk, ProcessSpawnResult, Register, RenderInput, Timer } from 'claude-code'
 
-import type { ArcadePad, ArcadeSaves, ArcadeScores, ArcadeSession, GameId } from '../types'
+import type { ArcadeBank, ArcadePad, ArcadeSaves, ArcadeScores, ArcadeSession, GameId } from '../types'
 import { BENCH, fillSlot, inSlot, slotOf } from './bench'
+import { blackjackGame } from './blackjack'
+import { START_CHIPS } from './cards'
 import { SHELL_CONTROLS, clock, entryKey, fmtNum, mergeScore, parseBoardMessage } from './game'
 import type { Game, GameControl, Key, Seg, View } from './game'
 import { acceptPad, parsePadLine, splitLines } from './pad'
 import type { PadEvent } from './pad'
+import { pokerGame } from './poker'
 import { sudokuGame } from './sudoku'
 import { tetrisGame } from './tetris'
 import { tttGame } from './ttt'
+import { unoGame } from './uno'
 
 // The shell: it owns every atom, the one ticker, the key path, the controller
 // bridge and the drawing. The game modules are pure (state in, state out, a
@@ -24,13 +28,14 @@ const IDLE_MS = 30_000
 const DOUBLE_MS = 40
 const SCORES_KEY = 'scores'
 const SUDOKU_KEY = 'sudoku'
-const DESCRIPTION = 'Play tic-tac-toe, sudoku and tetris in a side pane (keyboard, mouse or an Xbox controller)'
+const BANK_KEY = 'bankroll'
+const DESCRIPTION = 'Play tic-tac-toe, sudoku, tetris, video poker, blackjack and UNO in a side pane (keyboard, mouse or an Xbox controller)'
 const HINT = 'click the board for arrow keys'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyGame = Game<any, any>
-// The registry: pack 2 adds its games here and to ArcadeSaves, nothing else.
-const GAMES: AnyGame[] = [tttGame, sudokuGame, tetrisGame]
+// The registry: a new game is added here and to ArcadeSaves, nothing else.
+const GAMES: AnyGame[] = [tttGame, sudokuGame, tetrisGame, pokerGame, blackjackGame, unoGame]
 const gameOf = (id: string | undefined): AnyGame | undefined => GAMES.find(g => g.id === id)
 
 const session = atom({ plugin: 'arcade', key: 'session' } as const, {
@@ -44,6 +49,8 @@ const session = atom({ plugin: 'arcade', key: 'session' } as const, {
 const saves = atom({ plugin: 'arcade', key: 'saves' } as const, {} as ArcadeSaves)
 const scores = atom({ plugin: 'arcade', key: 'scores' } as const, {} as ArcadeScores)
 const pad = atom({ plugin: 'arcade', key: 'pad' } as const, { status: 'off' } as ArcadePad)
+// The play chips poker and blackjack share; $.store key bankroll keeps them across sessions.
+const bank = atom({ plugin: 'arcade', key: 'bank' } as const, { chips: START_CHIPS, peak: START_CHIPS } as ArcadeBank)
 
 type Source = 'client' | 'button' | 'pad'
 
@@ -58,6 +65,7 @@ let size = { cols: 48, rows: 30 }
 const applied = new Map<string, number>()
 let padStream: HookStream<ProcessSpawnChunk, ProcessSpawnResult> | undefined
 let padFailed = false
+let bankLoaded = false
 
 const str = (name: string, fallback: string): string => {
   const v = settings[name]
@@ -68,16 +76,42 @@ const str = (name: string, fallback: string): string => {
 function defaultOpts(id: string): Record<string, string> {
   if (id === 'ttt') return { level: str('tttLevel', 'hard') }
   if (id === 'sudoku') return { difficulty: str('sudokuDifficulty', 'medium') }
+  if (id === 'poker' || id === 'blackjack') return {}
+  if (id === 'uno') return { opponents: str('unoOpponents', '3') }
   return { mode: str('tetrisSpeed', 'normal') }
 }
 
 /** The options a restart keeps from the game in progress. */
 function restartOpts(id: string, state: unknown): Record<string, string> {
-  const s = state as { level?: string; difficulty?: string; mode?: string } | undefined
+  const s = state as { level?: string; difficulty?: string; mode?: string; bet?: number; opponents?: number } | undefined
   if (id === 'ttt' && s?.level) return { level: s.level }
   if (id === 'sudoku' && s?.difficulty) return { difficulty: s.difficulty }
   if (id === 'tetris' && s?.mode) return { mode: s.mode }
+  if ((id === 'poker' || id === 'blackjack') && s?.bet) return { bet: String(s.bet) }
+  if (id === 'uno' && s?.opponents) return { opponents: String(s.opponents) }
   return defaultOpts(id)
+}
+
+// ---------- the bankroll ----------
+
+/** Reads the stored bankroll into the atom once; a missing, negative or non-numeric one is ignored (a fresh 500 stays). */
+async function loadBank($: EngineInterface) {
+  if (bankLoaded) return
+  bankLoaded = true
+  const stored = (await $.store.get(BANK_KEY)) as Partial<ArcadeBank> | undefined
+  if (stored && typeof stored === 'object' && Number.isFinite(stored.chips) && (stored.chips as number) >= 0) {
+    const chips = Math.floor(stored.chips as number)
+    const peak = Number.isFinite(stored.peak) ? Math.max(chips, stored.peak as number) : chips
+    await update($, bank, () => ({ chips, peak }))
+  }
+}
+
+/** Writes a game's chips into the bankroll (the atom and the store) when they changed. */
+async function saveBank($: EngineInterface, chips: number) {
+  const held = await read($, bank)
+  if (chips === held.chips) return
+  const merged = await update($, bank, b => ({ chips, peak: Math.max(b.peak, chips) }))
+  await $.store.set(BANK_KEY, merged)
 }
 
 // ---------- the games' state ----------
@@ -97,6 +131,7 @@ async function step($: EngineInterface, fn: (game: AnyGame, state: unknown, now:
 }
 
 async function afterChange($: EngineInterface, game: AnyGame, state: { recorded: boolean }) {
+  if (game.bank) await saveBank($, game.bank.get(state))
   if (game.isOver(state) && !state.recorded) {
     const delta = game.score(state)
     if (delta) {
@@ -118,7 +153,9 @@ async function startGame($: EngineInterface, id: string, opts: Record<string, st
   const seed = (now ^ Math.imul(counter, 0x9e3779b1)) | 0
   const before = await read($, session)
   if (before.current && before.current !== id) await pauseGame($, undefined)
-  const state = game.init(seed, opts, now)
+  const fresh = game.init(seed, opts, now)
+  if (game.bank) await loadBank($)
+  const state = game.bank ? game.bank.set(fresh, (await read($, bank)).chips) : fresh
   await update($, saves, held => ({ ...held, [id]: state }))
   await update<ArcadeSession>($, session, s => ({ ...s, screen: 'play', current: id as GameId, showHelp: false, paused: false, pauseNote: undefined, lastInputAt: now }))
   if (id === 'sudoku') await $.store.set(SUDOKU_KEY, state)
@@ -186,7 +223,13 @@ async function pickGame($: EngineInterface, id: string) {
   if (!game) return
   const held = (await read($, saves))[id as GameId] as { recorded: boolean } | undefined
   if (held && !game.isOver(held)) {
-    // An unfinished game carries on where it was.
+    // An unfinished game carries on where it was, with the bankroll as it is now.
+    const b = game.bank
+    if (b) {
+      await loadBank($)
+      const chips = (await read($, bank)).chips
+      await update($, saves, all => ({ ...all, [id]: b.set(all[id as GameId], chips) }))
+    }
     await update<ArcadeSession>($, session, s => ({ ...s, screen: 'play', current: id as GameId, showHelp: false }))
     await resumeGame($)
   } else await startGame($, id, defaultOpts(id))
@@ -349,8 +392,17 @@ function parseArgs(raw: string): Parsed {
     if (arg && arg !== 'zen' && arg !== 'normal') return { kind: 'error', text: 'Tetris speeds: normal, zen.' }
     return { kind: 'game', id: 'tetris', opts: { mode: arg ?? str('tetrisSpeed', 'normal') } }
   }
-  return { kind: 'error', text: `No game "${name}". Try: ttt, sudoku, tetris, scores.` }
+  if (name === 'poker' || name === 'video-poker' || name === 'jacks') return { kind: 'game', id: 'poker', opts: {} }
+  if (name === 'blackjack' || name === 'bj' || name === '21') return { kind: 'game', id: 'blackjack', opts: {} }
+  if (name === 'uno') {
+    if (arg && arg !== '2' && arg !== '3') return { kind: 'error', text: 'UNO opponents: 2 or 3.' }
+    return { kind: 'game', id: 'uno', opts: { opponents: arg ?? str('unoOpponents', '3') } }
+  }
+  return { kind: 'error', text: `No game "${name}". Try: ttt, sudoku, tetris, poker, blackjack, uno, scores.` }
 }
+
+/** The bankroll as one line. */
+const bankLine = (b: ArcadeBank): string => `Bankroll ${fmtNum(b.chips)} chips (peak ${fmtNum(b.peak)})`
 
 function scoreLines(all: ArcadeScores): string[] {
   return GAMES.map(g => {
@@ -386,7 +438,7 @@ async function runCommand($: EngineInterface, args: string) {
   if (!opened.isPlaced) $.ui.toast(`Arcade waits: ${opened.reason}`)
   await startPad($)
   await armTicker($)
-  if (parsed.kind === 'scores') return { text: ['Arcade scores:', ...scoreLines(await read($, scores))].join('\n') }
+  if (parsed.kind === 'scores') return { text: ['Arcade scores:', ...scoreLines(await read($, scores)), bankLine(await read($, bank))].join('\n') }
   return { text: 'Arcade is open. Click the board once for arrow keys; the letter and digit keys work as soon as the pane has the keyboard.' }
 }
 
@@ -474,6 +526,7 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>, o: { inBench
           : p.status === 'missing' ? 'Controller: build native\\build.cmd to enable it.'
             : ''
     const all = await read($, scores)
+    const held = await read($, bank)
     return (
       <Box flexDirection="column">
         <Text key="title" bold color="cyan">
@@ -496,12 +549,16 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>, o: { inBench
         <Text key="scores-line" dimColor wrap="truncate">
           {scoreLines(all).slice(0, 1).join('')}
         </Text>
+        <Text key="bank-line" dimColor wrap="truncate">
+          {bankLine(held)}
+        </Text>
       </Box>
     )
   }
 
   if (s.screen === 'scores') {
     const all = await read($, scores)
+    const held = await read($, bank)
     return (
       <Box flexDirection="column">
         <Text key="title" bold color="cyan">
@@ -512,6 +569,9 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>, o: { inBench
             {l}
           </Text>
         ))}
+        <Text key="bank-line" wrap="wrap">
+          {bankLine(held)}
+        </Text>
         <Button key="back" label="back" {...hk('q')} plain onPress={() => update<ArcadeSession>($, session, held => ({ ...held, screen: 'picker' }))} />
       </Box>
     )
@@ -529,7 +589,7 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>, o: { inBench
       </Text>
     </Box>
   )
-  const controls = buttons(m.game.id === 'ttt' ? SHELL_CONTROLS : [...(m.game.controls as GameControl[]), ...SHELL_CONTROLS])
+  const controls = buttons(m.game.id === 'ttt' ? SHELL_CONTROLS : [...(m.view.controls ?? (m.game.controls as GameControl[])), ...SHELL_CONTROLS])
 
   // Tic-tac-toe is Buttons: it needs no keyboard on the board.
   if (m.view.grid && !m.s.showHelp) {
@@ -583,7 +643,7 @@ export const register: Register = (on, options) => {
       await $.command.register({
         name: COMMAND,
         description: DESCRIPTION,
-        argumentHint: '[ttt | sudoku [easy|medium|hard] | tetris [zen] | scores]',
+        argumentHint: '[ttt | sudoku [easy|medium|hard] | tetris [zen] | poker | blackjack | uno [2|3] | scores]',
       })
     } catch {
       // The name is taken by something else: the same command under another name.
@@ -591,6 +651,7 @@ export const register: Register = (on, options) => {
     }
     const stored = (await $.store.get(SCORES_KEY)) as ArcadeScores | undefined
     if (stored && typeof stored === 'object') await update($, scores, () => stored)
+    await loadBank($)
     const held = await read($, saves)
     if (!held.sudoku) {
       const save = (await $.store.get(SUDOKU_KEY)) as ArcadeSaves['sudoku'] | undefined

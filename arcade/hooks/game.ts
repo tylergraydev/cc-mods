@@ -23,6 +23,8 @@ export type Seg = {
 /** One cell of a game drawn as Buttons (tic-tac-toe). */
 export type GridCell = { key: string; label: string; hotkey?: string; highlight: boolean; press: Key }
 
+export type GameControl = { label: string; key: Key; hotkey?: string; kb: string; pad?: string }
+
 export type View = {
   header: Seg[]
   /** The board as lines of runs; a Client draws them and keys/clicks come back. */
@@ -30,9 +32,9 @@ export type View = {
   /** When present the pane draws these as Buttons instead of `board`. */
   grid?: GridCell[][]
   status: string
+  /** The Buttons this phase offers (a subset of `Game.controls`); absent: the shell draws all of them. */
+  controls?: GameControl[]
 }
-
-export type GameControl = { label: string; key: Key; hotkey?: string; kb: string; pad?: string }
 
 export type ScoreDelta = {
   counters?: Record<string, number>
@@ -63,6 +65,8 @@ export interface Game<S extends { recorded: boolean }, O = Record<string, string
   pauseOnReload?: boolean
   /** Any key resumes a pause and is then applied (no dedicated pause key). */
   softPause?: boolean
+  /** Games that bet from the shared bankroll: the shell writes it in on start/resume and reads it back after every step. */
+  bank?: { get(state: S): number; set(state: S, chips: number): S }
 }
 
 export const defineGame = <S extends { recorded: boolean }, O = Record<string, string>>(g: Game<S, O>): Game<S, O> => g
