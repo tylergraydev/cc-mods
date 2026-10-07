@@ -1,0 +1,13 @@
+{
+  "name": "cache-clock",
+  "version": "0.1.0",
+  "description": "A prompt-cache countdown in the status line, and a Compact / Handoff / Clear band once the cache has lapsed",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ttlMinutes": { "type": "number", "title": "Cache TTL (minutes)", "description": "How long the prompt cache keeps a prefix after a request. 60 on the normal plan, 5 while in usage overage. /cache ttl <n> overrides it and is kept across sessions.", "default": 60 },
+    "warnMinutes": { "type": "number", "title": "Warn under (minutes)", "description": "Below this many minutes left the status switches to m:ss with a warning glyph.", "default": 5 },
+    "showBand": { "type": "boolean", "title": "Band after a lapse", "description": "Draw the Compact / Handoff / Clear / Keep going row above the prompt once the cache has lapsed.", "default": true },
+    "compactAbove": { "type": "number", "title": "Recommend compact above (tokens)", "description": "When the context is at least this many tokens, Compact is the primary button after a lapse; below it, Keep going is.", "default": 30000 }
+  }
+}

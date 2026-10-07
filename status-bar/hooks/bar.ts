@@ -12,6 +12,7 @@ export const LABELS: Record<string, string> = {
   guardrail: 'guard',
   'dev-doctor': 'doctor',
   'mod-menu': 'mods',
+  'cache-clock': 'cache',
 }
 
 export const SEP = ' │ '

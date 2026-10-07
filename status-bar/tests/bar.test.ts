@@ -36,7 +36,7 @@ const prefs = resolvePrefs(undefined, cfg)
 
 test('labels: every table entry, unknown names keep themselves', () => {
   for (const [plugin, label] of Object.entries(LABELS)) expect(labelOf(plugin)).toBe(label)
-  expect(Object.keys(LABELS)).toHaveLength(10)
+  expect(Object.keys(LABELS)).toHaveLength(11)
   expect(labelOf('arcade')).toBe('arcade')
 })
 
