@@ -1,15 +1,64 @@
 {
   "name": "inbox",
-  "version": "0.2.0",
-  "description": "A task inbox kept as markdown files in .inbox/: create tasks, deploy subagents on them one by one or as a drain, watch their progress, a watchdog for idle workers and cross-session locks",
-  "author": { "name": "tylergraydev" },
+  "version": "0.5.0",
+  "description": "The repo's inbox/ work queue as a pane: todo items at the root, then processing/, review/, done/ and blocked/. Shows what is ready (dependencies, owner-path overlap, locks), starts Codex or Claude workers on items, drains the queue, reviews and accepts, with a watchdog for idle workers and cross-session locks",
+  "author": {
+    "name": "tylergraydev"
+  },
   "types": "./types/index.d.ts",
   "userConfig": {
-    "idleMinutes": { "type": "number", "title": "Idle minutes", "description": "A worker with no new activity for this long turns yellow and toasts once.", "default": 10 },
-    "timeoutMinutes": { "type": "number", "title": "Timeout minutes", "description": "A worker idle this long is marked timed out (red, toast once), then the on-timeout action runs.", "default": 30 },
-    "maxRunMinutes": { "type": "number", "title": "Max run minutes", "description": "Optional wall-clock cap, treated like a timeout. 0 turns it off.", "default": 0 },
-    "onTimeout": { "type": "string", "title": "On timeout", "description": "mark: only the row and a toast. nudge: also send the worker a note. redeploy: abandon the run and deploy a fresh agent (once per task). The mod cannot stop a subagent.", "options": ["mark", "nudge", "redeploy"], "default": "mark" },
-    "lockStaleMinutes": { "type": "number", "title": "Lock stale minutes", "description": "A lock not refreshed for this long can be taken over by another session.", "default": 20 },
-    "commitTrailer": { "type": "string", "title": "Commit trailer", "description": "Git trailer key the review commit check looks for.", "default": "Inbox-Task" }
+    "idleMinutes": {
+      "type": "number",
+      "title": "Idle minutes",
+      "description": "A worker with no new activity for this long turns yellow and toasts once.",
+      "default": 10
+    },
+    "timeoutMinutes": {
+      "type": "number",
+      "title": "Timeout minutes",
+      "description": "A worker idle this long is marked timed out (red, toast once), then the on-timeout action runs.",
+      "default": 30
+    },
+    "maxRunMinutes": {
+      "type": "number",
+      "title": "Max run minutes",
+      "description": "Optional wall-clock cap, treated like a timeout. 0 turns it off.",
+      "default": 0
+    },
+    "onTimeout": {
+      "type": "string",
+      "title": "On timeout",
+      "description": "mark: only the row and a toast. nudge: also send the worker a note. redeploy: send the item back to todo and dispatch a fresh worker (once per item). The mod cannot stop a subagent.",
+      "options": [
+        "mark",
+        "nudge",
+        "redeploy"
+      ],
+      "default": "mark"
+    },
+    "lockStaleMinutes": {
+      "type": "number",
+      "title": "Lock stale minutes",
+      "description": "A lock not refreshed for this long can be taken over by another session.",
+      "default": 20
+    },
+    "commitTrailer": {
+      "type": "string",
+      "title": "Commit trailer",
+      "description": "Git trailer key a review commit carries, followed by the item name; the commit check looks for it.",
+      "default": "Inbox"
+    },
+    "autoReview": {
+      "type": "boolean",
+      "title": "Auto review",
+      "description": "When a worker lands an item in review/, start a reviewer on it at once (it verifies, commits with the Inbox trailer and moves the item to done/, or sends it back). While draining, items already in review/ get reviewers too, within the drain width. Each item is auto-reviewed once per session.",
+      "default": false
+    },
+    "codexModel": {
+      "type": "string",
+      "title": "Codex model",
+      "description": "Model line passed to the codex-runner for Codex items. Empty uses the runner's default (gpt-6.1-sol, or CODEX_UI_MODEL).",
+      "default": ""
+    }
   }
 }

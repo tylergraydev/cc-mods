@@ -1,15 +1,15 @@
 import type { InboxLock, InboxPhase } from '../types'
 import { shortDuration } from './watch'
 
-// Per-task lock files in .inbox/.locks/, so two Claude sessions in one repo do
-// not work or review the same task. $.fs has no exclusive create, so taking a
+// Per-item lock files in inbox/.locks/, so two Claude sessions in one repo do
+// not work or review the same item. $.fs has no exclusive create, so taking a
 // lock is best effort: write, read back, and trust it only if the nonce is ours.
 // The pure side lives here; the reads and writes sit in register.tsx, since a
 // hooks module may not hand `$` to a function across an import.
 
-export const LOCK_DIR = '.inbox/.locks'
+export const LOCK_DIR = 'inbox/.locks'
 
-export const lockPath = (id: number) => `${LOCK_DIR}/${String(id).padStart(3, '0')}.lock`
+export const lockPath = (name: string) => `${LOCK_DIR}/${name}.lock`
 
 export type LockState = 'free' | 'mine' | 'stale' | 'held'
 
@@ -21,7 +21,7 @@ export function parseLock(text: string): InboxLock | undefined {
     const raw: unknown = JSON.parse(text.trim())
     if (typeof raw !== 'object' || raw === null) return undefined
     const lock = raw as Partial<InboxLock>
-    if (typeof lock.task !== 'number' || typeof lock.session !== 'string' || typeof lock.refreshedAt !== 'string') return undefined
+    if (typeof lock.task !== 'string' || typeof lock.session !== 'string' || typeof lock.refreshedAt !== 'string') return undefined
     return {
       task: lock.task,
       phase: lock.phase === 'review' ? 'review' : 'work',
@@ -56,7 +56,7 @@ export function describeLock(lock: InboxLock, now: number): string {
 /** What taking a lock writes, or why it is refused. `tookOver` is the stale lock it replaces. */
 export function claimLock(
   held: InboxLock | undefined,
-  id: number,
+  id: string,
   phase: InboxPhase,
   me: string,
   now: number,
@@ -64,7 +64,7 @@ export function claimLock(
   host: string | undefined,
 ): { lock: InboxLock; tookOver?: InboxLock } | { reason: string } {
   const state = lockState(held, now, me, staleMs)
-  if (state === 'held' && held) return { reason: `#${id} locked by ${describeLock(held, now)}` }
+  if (state === 'held' && held) return { reason: `${id} locked by ${describeLock(held, now)}` }
   const nonce = `${me}:${now}:${Math.random().toString(36).slice(2, 8)}`
   const lock: InboxLock = {
     task: id,

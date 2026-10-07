@@ -35,7 +35,7 @@ export function watchConfig(options: PluginOptions): WatchConfig {
     maxRunMs: minutes(options, 'maxRunMinutes', 0) * MINUTE,
     onTimeout: on === 'nudge' || on === 'redeploy' ? on : 'mark',
     lockStaleMs: Math.max(1, minutes(options, 'lockStaleMinutes', 20)) * MINUTE,
-    trailer: trailer || 'Inbox-Task',
+    trailer: trailer || 'Inbox',
   }
 }
 
