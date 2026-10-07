@@ -1,0 +1,15 @@
+{
+  "name": "walkie",
+  "version": "0.2.0",
+  "description": "Push-to-talk to Claude Code from any app: a held key records, a local Whisper transcribes, the mod submits the words and the answer is read aloud",
+  "userConfig": {
+    "folder": { "type": "string", "title": "Exchange folder", "description": "Where walkie.py drops transcripts and the mod leaves replies. Empty = ~/.claude/walkie.", "default": "" },
+    "pollMs": { "type": "number", "title": "Poll every (ms)", "description": "How often the drop folder is checked for a new transcript. Minimum 100.", "default": 500 },
+    "asUser": { "type": "boolean", "title": "Submit as your own words", "description": "Send each transcript as if you typed it, without the 'plugin sent a message' frame.", "default": true },
+    "speakReplies": { "type": "boolean", "title": "Read replies aloud", "description": "Write Claude's answer to the replies folder so walkie.py speaks it.", "default": true },
+    "hint": { "type": "string", "title": "Hint added to each voice prompt", "description": "Appended in parentheses after the transcript so the answer suits being read aloud. Empty for none.", "default": "Spoken over push-to-talk while I am away from the keyboard. Keep the reply short and plain: it is read aloud." },
+    "autoStart": { "type": "boolean", "title": "Start the recorder", "description": "The session that answers the drops starts walkie.py itself when no recorder is alive, and it ends with that session.", "default": true },
+    "python": { "type": "string", "title": "Python executable", "description": "What runs walkie.py: a name on PATH or a full path, spelled with .exe on Windows.", "default": "python.exe" },
+    "recorderArgs": { "type": "string", "title": "Recorder arguments", "description": "Extra flags for walkie.py, for example --key f14 --model small --no-speak.", "default": "" }
+  }
+}

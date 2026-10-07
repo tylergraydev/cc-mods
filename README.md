@@ -6,6 +6,7 @@ Mods for Claude Code: plugins of function hooks that add side panes, status line
 | --- | --- |
 | [agent-deck](agent-deck/) | Live pane of the session's subagents: status, tool calls, answers, launch and nudge, spawn caps and model rules |
 | [arcade](arcade/) | Tic-tac-toe, sudoku, tetris, video poker, blackjack and UNO in a side pane, playable by keyboard, mouse or an Xbox controller |
+| [ask-on-auto-deny](ask-on-auto-deny/) | When auto mode's classifier blocks a tool call, asks you above the prompt and lets you allow that exact call once |
 | [booster-pane](booster-pane/) | Open pretend Pokémon TCG booster packs by set: card art in the terminal, a collection and pull stats |
 | [claim-check](claim-check/) | Flags confident claims about prod, data, deployments and tickets that no query backed up in the same turn |
 | [dev-doctor](dev-doctor/) | Read-only environment checks on session start: bash, .NET, ports, git locks, Docker, Node and more |
@@ -24,6 +25,7 @@ Mods for Claude Code: plugins of function hooks that add side panes, status line
 | [sound-board](sound-board/) | Plays a distinct sound for subagent events, permission asks, denials and finished turns |
 | [status-bar](status-bar/) | Folds every mod's status line into one line under the prompt, or one wrapped row above it |
 | [usage-tracker](usage-tracker/) | Live 5-hour and 7-day usage with pace markers, burn-rate projections and sparklines |
+| [walkie](walkie/) | Push-to-talk from any app: hold a key while gaming, a local Whisper transcribes, the words become a prompt and the answer is read aloud |
 | [workbench](workbench/) | Hosts other mods' panes in one docked pane split into two columns |
 
 `doom-pane` and `rail-runner` are git submodules of their own repos. Clone with `git clone --recurse-submodules`.
