@@ -1,3 +1,4 @@
+import { atom, read, update } from 'claude-code'
 import type { EngineInterface, HookStream, ProcessSpawnChunk, ProcessSpawnResult, Register, Timer } from 'claude-code'
 
 import {
@@ -21,7 +22,8 @@ import type { Command, Config, Owner, Recorder, Snapshot } from './walkie'
 // submits each new drop as a prompt, and leaves the answer under
 // <folder>/replies for the recorder to read aloud. The session that owns the
 // folder (owner.txt, refreshed while it lives) is the one that answers, and it
-// starts the recorder itself when none is alive.
+// starts the recorder itself when none is alive. Any other window shows a band
+// with a button that takes the folder over.
 
 const NAME = 'walkie'
 const DESCRIPTION = 'Push-to-talk from any app: status, pause, resume, say, drop, start, stop, log, take'
@@ -33,6 +35,8 @@ const ANOTHER_RECORDER_CODE = 3
 const LOG_LINES = 40
 
 type Child = HookStream<ProcessSpawnChunk, ProcessSpawnResult>
+
+const ownerAtom = atom({ plugin: 'walkie', key: 'owner' } as const, 'free' as Owner)
 
 let cfg: Config = readConfig({}, '')
 let timer: Timer | undefined
@@ -76,6 +80,14 @@ function refreshStatus($: EngineInterface) {
   $.ui.status(statusLine({ paused, recorder, owner }))
 }
 
+/** Records who answers the drops; the band above the prompt redraws from the atom. */
+async function setOwner($: EngineInterface, who: Owner) {
+  if (owner === who) return
+  owner = who
+  await update($, ownerAtom, () => who)
+  refreshStatus($)
+}
+
 async function mark($: EngineInterface, stem: string) {
   watermark = stem
   await $.store.set(storeKey(cfg.folder), stem)
@@ -94,6 +106,15 @@ async function arm($: EngineInterface) {
   refreshStatus($)
 }
 
+/** Makes this session the one that answers: the owner file is written now, and drops from before are skipped. */
+async function takeOwnership($: EngineInterface, now: number) {
+  await $.fs.write(`${cfg.folder}/owner.txt`, me)
+  lastOwnerWrite = now
+  // drops spoken while another window (or nobody) was answering are not replayed here
+  if (owner !== 'mine') await mark($, String(now))
+  await setOwner($, 'mine')
+}
+
 /** Takes the folder when nobody live has it, keeps it while this session lives, and stands back otherwise. */
 async function claim($: EngineInterface, now: number) {
   const path = `${cfg.folder}/owner.txt`
@@ -101,21 +122,16 @@ async function claim($: EngineInterface, now: number) {
   if (stat && stat.mtimeMs !== ownerSeen.mtimeMs) ownerSeen = { mtimeMs: stat.mtimeMs, text: await $.fs.read(path).catch(() => '') }
   const state = ownership(stat?.mtimeMs, stat ? ownerSeen.text : '', now, cfg.staleMs, me)
   if (state === 'other') {
-    if (owner !== 'other') {
-      owner = 'other'
-      refreshStatus($)
-    }
+    await setOwner($, 'other')
     return
   }
-  if (state === 'free' || now - lastOwnerWrite >= OWNER_BEAT_MS) {
+  if (state === 'free' || owner !== 'mine') {
+    await takeOwnership($, now)
+    return
+  }
+  if (now - lastOwnerWrite >= OWNER_BEAT_MS) {
     await $.fs.write(path, me)
     lastOwnerWrite = now
-  }
-  if (owner !== 'mine') {
-    // drops spoken while nobody was answering are not replayed into this session
-    if (owner === 'other') await mark($, String(now))
-    owner = 'mine'
-    refreshStatus($)
   }
 }
 
@@ -264,10 +280,7 @@ async function runCommand($: EngineInterface, c: Command): Promise<string> {
     case 'log':
       return childLog.length ? childLog.slice(-15).join('\n') : 'No recorder output in this session yet.'
     case 'take':
-      await $.fs.write(`${cfg.folder}/owner.txt`, me)
-      lastOwnerWrite = now
-      owner = 'mine'
-      refreshStatus($)
+      await takeOwnership($, now)
       return 'This session now answers the drops.'
     case 'help':
       return HELP
@@ -315,6 +328,29 @@ export const register: Register = (on, options) => {
       })
     }
     return r
+  })
+
+  // In a window that is not the target: one line and a button that makes it the target.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const who = await read($, ownerAtom)
+    if (who !== 'other' || e.props.hasSurvey || e.props.view.agentId) return next(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    return (
+      <Box key="walkie-band" flexDirection="row">
+        <Box key="band-text">
+          <Text dimColor>🎙 walkie answers in another window </Text>
+        </Box>
+        <Button
+          key="take"
+          label="Answer here"
+          hotkey="w"
+          variant="primary"
+          onPress={async () => {
+            await takeOwnership($, await $.clock.now())
+          }}
+        />
+      </Box>
+    )
   })
 
   on('command.run', { command: NAME }, async ($, e) => ({ text: await runCommand($, parseCommand(e.args)) }))

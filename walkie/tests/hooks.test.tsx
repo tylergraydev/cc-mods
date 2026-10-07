@@ -11,6 +11,7 @@ const FOLDER = 'C:/Users/t/.claude/walkie'
 const START = 1_700_000_000_000
 const ME = 'session-me'
 const READY = '08:35:41 ready: hold F13 to talk · drops → C:\\x\n'
+const PROPS = { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 80, scroll: { offset: 0, bodyRows: 10 }, view: {} } as const
 
 /** The engine beneath the mod: a fake file system, a store, a clock, a recorder child, and a record of what the mod did. */
 function world($: Sandbox, on: On) {
@@ -101,6 +102,10 @@ function world($: Sandbox, on: On) {
     }
     return { code: 0, signal: null } as never
   })
+  on('ui.render', async ($, e) => {
+    const { Box } = $.ui.resolve(e)
+    return <Box key="engine" />
+  })
   on('session.start', async (_, e) => ({ cwd: e.cwd }))
   on('turn.start', async (_, e) => ({ turnId: e.turnId }))
   on('turn.complete', async (_, e) => ({ text: e.answer }))
@@ -127,7 +132,8 @@ function world($: Sandbox, on: On) {
   const command = async (args: string) => String((await $.command.run({ command: 'walkie', args } as Parameters<typeof $.command.run>[0])).text)
   const replies = () => [...files.keys()].filter(k => k.startsWith(`${FOLDER}/replies/`)).sort()
   const owner = () => files.get(`${FOLDER}/owner.txt`)?.text
-  return Object.assign(w, { start, drop, beat, otherOwner, tick, turn, command, replies, owner })
+  const band = () => $.ui.mount({ plugin: 'walkie', surface: 'terminal', component: 'AbovePrompt', props: PROPS } as never)
+  return Object.assign(w, { start, drop, beat, otherOwner, tick, turn, command, replies, owner, band })
 }
 
 test('a new drop is submitted with the hint, and the answer to its turn comes back as a reply', async ($, on) => {
@@ -220,6 +226,27 @@ test('/walkie take claims the folder from a live session', async ($, on) => {
   t.drop('mine')
   await t.tick()
   expect(t.submitted.length).toBe(1)
+})
+
+test('a window that is not the target shows a band whose button makes it the target', async ($, on) => {
+  const t = world($, on)
+  t.otherOwner()
+  await t.start()
+  await t.tick()
+  const ui = await t.band()
+  expect((await ui.find({ key: 'band-text' }))?.text).toContain('another window')
+  await ui.press({ key: 'take' })
+  expect(t.owner()).toBe(ME)
+  expect(await ui.find({ key: 'walkie-band' })).toBeUndefined()
+  expect(await t.command('')).toContain('answers drops: this session')
+})
+
+test('the target window shows no band', async ($, on) => {
+  const t = world($, on)
+  await t.start()
+  await t.tick()
+  const ui = await t.band()
+  expect(await ui.find({ key: 'walkie-band' })).toBeUndefined()
 })
 
 test('the status line follows the recorder heartbeat', async ($, on) => {

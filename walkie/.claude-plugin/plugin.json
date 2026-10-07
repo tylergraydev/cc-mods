@@ -1,7 +1,9 @@
 {
   "name": "walkie",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Push-to-talk to Claude Code from any app: a held key records, a local Whisper transcribes, the mod submits the words and the answer is read aloud",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
   "userConfig": {
     "folder": { "type": "string", "title": "Exchange folder", "description": "Where walkie.py drops transcripts and the mod leaves replies. Empty = ~/.claude/walkie.", "default": "" },
     "pollMs": { "type": "number", "title": "Poll every (ms)", "description": "How often the drop folder is checked for a new transcript. Minimum 100.", "default": 500 },

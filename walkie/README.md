@@ -36,7 +36,7 @@ If the game runs elevated (most anti-cheat does), the recorder must be elevated 
 
 ## Several sessions
 
-Only one session answers the drops: the first one up writes `owner.txt` and refreshes it while it lives. The others leave the folder alone, show no walkie status, and take over within 15 seconds of the owner closing. `/walkie take` moves ownership to the session you are in. The owner is also the session that starts the recorder.
+Only one session answers the drops: the first one up writes `owner.txt` and refreshes it while it lives. The others leave the folder alone, show no walkie status, and take over within 15 seconds of the owner closing. Every other window shows a one-line band above the prompt, `🎙 walkie answers in another window`, with an **Answer here** button (hotkey `w`): press it and that window becomes the target. `/walkie take` does the same from the keyboard. The owner is also the session that starts the recorder.
 
 ## Commands
 
