@@ -16,14 +16,14 @@ walkie.py ◀──reads aloud──  ~/.claude/walkie/replies/<ms>.txt  ◀─�
 
 Two parts:
 
-- **`walkie.py`** runs outside Claude Code. It hooks a global key, records the microphone while the key is held, transcribes with a local faster-whisper model on your GPU, and drops the text as a file. It also watches the replies folder and speaks each one with the Windows speech synthesizer.
+- **`walkie.py`** runs outside Claude Code. It hooks a global key, records the microphone while the key is held, transcribes with a local faster-whisper model on the CPU (small.en by default: no VRAM, under two seconds, four threads), and drops the text as a file. It also watches the replies folder and speaks each one with the Windows speech synthesizer.
 - **The mod** polls the drop folder every half second, submits each new transcript as a turn of its own (in your own words, with a short hint that the answer will be read aloud), and writes the answer of that turn to the replies folder.
 
 Claude Code's built-in `/voice` dictation is a terminal keypress, so it only works while the terminal has focus. Walkie exists for when it does not.
 
 ## Setup
 
-Needs Python 3.12 with `faster-whisper`, `sounddevice`, `keyboard` and `numpy`, plus CUDA for the GPU (CPU works with `recorderArgs` set to `--device cpu --compute int8 --model small`).
+Needs Python 3.12 with `faster-whisper`, `sounddevice`, `keyboard` and `numpy`. The default runs on the CPU and leaves the GPU to your game. When the GPU is free, `recorderArgs` set to `--model large-v3 --device cuda --compute float16` is the most accurate and fastest.
 
 1. In your mouse software, bind the spare button to **F13** (any key works; set `recorderArgs` to `--key f14` or the like).
 2. The mod loads with the rest of `C:\code\cc-mods` through `CLAUDE_CODE_PLUGIN_DIRS`. On session start it starts `walkie.py` itself, as a child that lives as long as the session, and toasts `walkie: ready: hold F13 to talk` once the model is loaded. The status line shows `🎙 walkie` while a recorder is alive.
@@ -54,7 +54,7 @@ Only one session answers the drops: the first one up writes `owner.txt` and refr
 
 ## Options
 
-`walkie.py --help` lists the recorder's flags: `--key`, `--model` (`large-v3` default; `small` is far lighter when the game wants the GPU), `--mic`, `--language`, `--no-speak`, `--rate`, `--suppress`. Pass them through the mod's `recorderArgs`.
+`walkie.py --help` lists the recorder's flags: `--key`, `--model` (`small.en` default), `--device`, `--compute`, `--threads` (4), `--mic`, `--language`, `--no-speak`, `--rate`, `--suppress`. Pass them through the mod's `recorderArgs`.
 
 The mod's `userConfig`:
 

@@ -7,8 +7,9 @@ transcribes on release, and the words land as <epoch ms>.txt under
 prompt and writes the answer under ~/.claude/walkie/replies, which this script
 reads aloud with the Windows speech synthesizer.
 
-    python walkie.py                 # F13, large-v3 on CUDA, speaks replies
-    python walkie.py --key f14 --model small --no-speak
+    python walkie.py                 # F13, small.en on the CPU (no VRAM), speaks replies
+    python walkie.py --model large-v3 --device cuda --compute float16   # the GPU, when it is free
+    python walkie.py --key f14 --no-speak
     python walkie.py --list-devices  # pick a microphone for --mic
 
 Beeps: high on record start, two-tone on a drop written, low when nothing was heard.
@@ -109,14 +110,14 @@ class Mic:
 
 
 class Transcriber:
-    def __init__(self, model: str, device: str, compute: str, language: str, beam: int, vocab: str) -> None:
+    def __init__(self, model: str, device: str, compute: str, language: str, beam: int, vocab: str, threads: int) -> None:
         from faster_whisper import WhisperModel
 
         try:
-            self.model = WhisperModel(model, device=device, compute_type=compute)
+            self.model = WhisperModel(model, device=device, compute_type=compute, cpu_threads=threads)
         except Exception as err:  # noqa: BLE001 - any CUDA/ctranslate2 failure falls back to the CPU
             log(f"{device}/{compute} failed ({err}); falling back to cpu/int8")
-            self.model = WhisperModel(model, device="cpu", compute_type="int8")
+            self.model = WhisperModel(model, device="cpu", compute_type="int8", cpu_threads=threads)
         self.language = language or None
         self.beam = beam
         self.vocab = vocab or None
@@ -230,9 +231,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Push-to-talk to Claude Code from any app.")
     ap.add_argument("--key", default="f13", help="the push-to-talk key, as the `keyboard` module names it (default f13)")
     ap.add_argument("--folder", default="~/.claude/walkie", help="exchange folder shared with the walkie mod")
-    ap.add_argument("--model", default="large-v3", help="faster-whisper model (large-v3, medium, small, base)")
-    ap.add_argument("--device", default="cuda", help="cuda or cpu")
-    ap.add_argument("--compute", default="float16", help="ctranslate2 compute type (float16 on GPU, int8 on CPU)")
+    ap.add_argument("--model", default="small.en", help="faster-whisper model: small.en (default, CPU-friendly), base.en, medium, large-v3, large-v3-turbo")
+    ap.add_argument("--device", default="cpu", help="cpu (default, no VRAM) or cuda")
+    ap.add_argument("--compute", default="int8", help="ctranslate2 compute type: int8 on the CPU, float16 on the GPU")
+    ap.add_argument("--threads", type=int, default=4, help="CPU threads for transcription, so a game keeps the rest")
     ap.add_argument("--language", default="en", help="dictation language code; empty to auto-detect")
     ap.add_argument("--beam", type=int, default=5)
     ap.add_argument("--vocab", default=DEFAULT_VOCAB, help="words hinted to the recognizer")
@@ -274,7 +276,7 @@ def main() -> None:
         leftover.unlink(missing_ok=True)
 
     log(f"loading {args.model} on {args.device} ({args.compute})…")
-    stt = Transcriber(args.model, args.device, args.compute, args.language, args.beam, args.vocab)
+    stt = Transcriber(args.model, args.device, args.compute, args.language, args.beam, args.vocab, args.threads)
     mic = Mic(pick_device(args.mic))
     speaker = Speaker(folder, args.rate, args.max_speak, not args.no_speak)
     jobs: queue.Queue[np.ndarray] = queue.Queue()

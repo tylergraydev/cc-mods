@@ -1,6 +1,6 @@
 {
   "name": "walkie",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Push-to-talk to Claude Code from any app: a held key records, a local Whisper transcribes, the mod submits the words and the answer is read aloud",
   "author": { "name": "tylergraydev" },
   "types": "./types/index.d.ts",
@@ -12,6 +12,6 @@
     "hint": { "type": "string", "title": "Hint added to each voice prompt", "description": "Appended in parentheses after the transcript so the answer suits being read aloud. Empty for none.", "default": "Spoken over push-to-talk while I am away from the keyboard. Keep the reply short and plain: it is read aloud." },
     "autoStart": { "type": "boolean", "title": "Start the recorder", "description": "The session that answers the drops starts walkie.py itself when no recorder is alive, and it ends with that session.", "default": true },
     "python": { "type": "string", "title": "Python executable", "description": "What runs walkie.py: a name on PATH or a full path, spelled with .exe on Windows.", "default": "python.exe" },
-    "recorderArgs": { "type": "string", "title": "Recorder arguments", "description": "Extra flags for walkie.py, for example --key f14 --model small --no-speak.", "default": "" }
+    "recorderArgs": { "type": "string", "title": "Recorder arguments", "description": "Extra flags for walkie.py, for example --key f14 --no-speak, or --model large-v3 --device cuda --compute float16 to use the GPU.", "default": "" }
   }
 }
