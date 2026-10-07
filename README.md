@@ -8,6 +8,7 @@ Mods for Claude Code: plugins of function hooks that add side panes, status line
 | [arcade](arcade/) | Tic-tac-toe, sudoku, tetris, video poker, blackjack and UNO in a side pane, playable by keyboard, mouse or an Xbox controller |
 | [ask-on-auto-deny](ask-on-auto-deny/) | When auto mode's classifier blocks a tool call, asks you above the prompt and lets you allow that exact call once |
 | [cache-clock](cache-clock/) | Counts down the prompt cache in the status line; after a lapse, a band offers Compact, Handoff, Clear or Keep going, cheapest marked |
+| [restart](restart/) | `/restart` exits Claude Code and types `claude -c` into the same terminal once the prompt is back; `fresh` or claude args instead |
 | [booster-pane](booster-pane/) | Open pretend Pokémon TCG booster packs by set: card art in the terminal, a collection and pull stats |
 | [claim-check](claim-check/) | Flags confident claims about prod, data, deployments and tickets that no query backed up in the same turn |
 | [dev-doctor](dev-doctor/) | Read-only environment checks on session start: bash, .NET, ports, git locks, Docker, Node and more |

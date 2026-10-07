@@ -1,0 +1,11 @@
+{
+  "name": "restart",
+  "version": "0.1.0",
+  "description": "/restart exits Claude Code and types `claude -c` into the same terminal once the prompt is back",
+  "author": { "name": "tylergraydev" },
+  "userConfig": {
+    "python": { "type": "string", "title": "Python executable", "description": "What runs restart.py, the helper that outlives Claude and types the relaunch: a name on PATH or a full path, spelled with .exe on Windows.", "default": "python.exe" },
+    "command": { "type": "string", "title": "Relaunch command", "description": "What is typed into the terminal after /exit. /restart fresh types plain `claude`; /restart <args> types `claude <args>`.", "default": "claude -c" },
+    "settleMs": { "type": "number", "title": "Settle (ms)", "description": "How long to wait after Claude has exited before typing, so the shell has drawn its prompt (0 to 10000).", "default": 400 }
+  }
+}
