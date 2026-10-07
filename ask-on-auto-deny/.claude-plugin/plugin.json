@@ -1,0 +1,13 @@
+{
+  "name": "ask-on-auto-deny",
+  "version": "0.1.0",
+  "description": "When auto mode's classifier blocks a tool call, asks you above the prompt and lets you allow that exact call once",
+  "author": { "name": "tylergraydev" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ttlMinutes": { "type": "number", "title": "Allowance minutes", "description": "How long an Allow once stays usable before it expires", "default": 10 },
+    "maxPending": { "type": "number", "title": "Pending shown", "description": "How many blocked calls the band above the prompt lists at once", "default": 3 },
+    "autoSubmit": { "type": "boolean", "title": "Submit the retry prompt", "description": "After you allow a call, send the model a prompt to retry it; off puts the prompt in the prompt box for you to send", "default": true },
+    "askDialog": { "type": "boolean", "title": "Also ask in a dialog", "description": "Also open Claude Code's question dialog (Allow once / Refuse) when auto mode blocks a call", "default": false }
+  }
+}
