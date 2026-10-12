@@ -45,7 +45,55 @@ SPEAK_PS1 = """param([string]$File, [int]$Rate = 1)
 Add-Type -AssemblyName System.Speech
 $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
 $s.Rate = $Rate
+$s.SelectVoice("Microsoft Zira Desktop")
 $s.Speak([IO.File]::ReadAllText($File, [Text.Encoding]::UTF8))
+"""
+# ElevenLabs first (key from the machine's ELEVENLABS_API_KEY, read here and never logged);
+# on any failure the Windows voice reads the reply instead.
+ELEVEN_PS1 = """param([string]$File, [int]$Rate = 1, [string]$VoiceId = 'st7NwhTPEzqo2riw7qWC', [string]$Model = 'eleven_flash_v2_5', [string]$LogFile = '')
+$text = [IO.File]::ReadAllText($File, [Text.Encoding]::UTF8)
+$key = [Environment]::GetEnvironmentVariable('ELEVENLABS_API_KEY', 'Machine')
+if (-not $key) { $key = $env:ELEVENLABS_API_KEY }
+
+function Write-Log([string]$msg) {
+  if ($LogFile) { Add-Content -Path $LogFile -Value ((Get-Date -Format 's') + ' ' + $msg) -Encoding utf8 }
+}
+
+function Invoke-Eleven {
+  $mp3 = Join-Path ([IO.Path]::GetTempPath()) ('walkie-' + [guid]::NewGuid() + '.mp3')
+  $body = @{ text = $text; model_id = $Model } | ConvertTo-Json
+  Invoke-WebRequest -Method Post -Uri "https://api.elevenlabs.io/v1/text-to-speech/$VoiceId" -Headers @{ 'xi-api-key' = $key; 'Accept' = 'audio/mpeg' } -ContentType 'application/json' -Body $body -OutFile $mp3 -UseBasicParsing
+  Add-Type -AssemblyName PresentationCore
+  $player = New-Object System.Windows.Media.MediaPlayer
+  $player.Open([uri]$mp3)
+  $player.Play()
+  $waited = 0
+  while (-not $player.NaturalDuration.HasTimeSpan) {
+    if ($waited -ge 5000) { throw 'player never reported a duration' }
+    Start-Sleep -Milliseconds 50
+    $waited += 50
+  }
+  Start-Sleep -Milliseconds ([int]$player.NaturalDuration.TimeSpan.TotalMilliseconds + 300)
+  $player.Close()
+  Remove-Item $mp3 -ErrorAction SilentlyContinue
+}
+
+if (-not $key) {
+  Write-Log 'no ELEVENLABS_API_KEY found; reply not spoken'
+  exit 1
+}
+
+$ok = $false
+for ($attempt = 1; $attempt -le 2 -and -not $ok; $attempt++) {
+  try {
+    Invoke-Eleven
+    $ok = $true
+  } catch {
+    Write-Log ("attempt $attempt failed: " + $_.Exception.Message)
+    Start-Sleep -Milliseconds 500
+  }
+}
+if (-not $ok) { exit 1 }
 """
 CREATE_NO_WINDOW = 0x08000000
 
@@ -159,6 +207,8 @@ class Speaker:
         self.replies = folder / "replies"
         self.ps1 = folder / "speak.ps1"
         self.ps1.write_text(SPEAK_PS1, encoding="utf-8")
+        self.eleven_ps1 = folder / "speak-eleven.ps1"
+        self.eleven_ps1.write_text(ELEVEN_PS1, encoding="utf-8")
         self.rate = rate
         self.max_chars = max_chars
         self.enabled = enabled
@@ -179,7 +229,7 @@ class Speaker:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
         self.proc = subprocess.Popen(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(self.ps1), "-File", path, "-Rate", str(self.rate)],
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(self.eleven_ps1), "-File", path, "-Rate", str(self.rate), "-LogFile", str(self.replies.parent / "eleven-errors.log")],
             creationflags=CREATE_NO_WINDOW,
         )
 
