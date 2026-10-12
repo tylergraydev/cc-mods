@@ -1,6 +1,6 @@
 {
   "name": "walkie",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Push-to-talk to Claude Code from any app: a held key records, a local Whisper transcribes, the mod submits the words and the answer is read aloud",
   "author": { "name": "tylergraydev" },
   "types": "./types/index.d.ts",
